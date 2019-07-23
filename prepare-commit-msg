@@ -9,6 +9,7 @@ FORMAT='[#__value__]'
 
 BRANCH_NAME=$(git symbolic-ref --short HEAD)
 BRANCH_NAME=${BRANCH_NAME##*/}
+BRANCH_NAME=${BRANCH_NAME%%-*}
 
 # В соляре у grep нет ключа -E, а у ggrep есть
 # Потому проверяем если grep не GNU, то для поиска по регуляркам берем ggrep
