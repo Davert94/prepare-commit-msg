@@ -11,29 +11,15 @@ BRANCH_NAME=$(git symbolic-ref --short HEAD)
 BRANCH_NAME=${BRANCH_NAME##*/}
 BRANCH_NAME=${BRANCH_NAME%%-*}
 
-# В соляре у grep нет ключа -E, а у ggrep есть
-# Потому проверяем если grep не GNU, то для поиска по регуляркам берем ggrep
-GREP=$(which grep)
-if [[ $(grep --version 2>/dev/null | grep -c 'GNU') -eq 0 ]]; then
-  GREP=$(which ggrep)
-fi
-
-BRANCH_NAME_IS_DIGIT=$(echo "${BRANCH_NAME}" | ${GREP} -cE '^[0-9]+$')
+BRANCH_NAME_IS_DIGIT=$(echo "${BRANCH_NAME}" | grep -cE '^[0-9]+$')
 
 if [[ ${BRANCH_NAME_IS_DIGIT} -eq 0 ]]; then
   exit 0
 fi
 
-# Ветки, которые исключаются из подстановки
-if [ -z "${BRANCHES_TO_SKIP}" ]; then
-  BRANCHES_TO_SKIP=(master develop test)
-fi
-
 TASK_NAME=$(echo "${FORMAT}" | sed "s/__value__/${BRANCH_NAME}/g")
-
-BRANCH_EXCLUDED=$(printf "%s\n" "${BRANCHES_TO_SKIP[@]}" | fgrep -c "${TASK_NAME}")
 BRANCH_IN_COMMIT=$(fgrep -c "${TASK_NAME}" $1)
 
-if [ -n "${TASK_NAME}" ] && ! [[ ${BRANCH_EXCLUDED} -eq 1 ]] && ! [[ ${BRANCH_IN_COMMIT} -ge 1 ]]; then
+if [ -n "${TASK_NAME}" ] && ! [[ ${BRANCH_IN_COMMIT} -ge 1 ]]; then
   echo "${TASK_NAME} $(cat $1)" > $1
 fi
