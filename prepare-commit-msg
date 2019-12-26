@@ -9,6 +9,8 @@ FORMAT='[#__value__]'
 REGEXP_FOR_SEARCH='\K\d+'
 
 BRANCH_NAME=$(git symbolic-ref --short HEAD)
+BRANCH_NAME=${BRANCH_NAME##*/}
+BRANCH_NAME=${BRANCH_NAME%%-*}
 BRANCH_NAME=$(echo "${BRANCH_NAME}" | grep -oP ${REGEXP_FOR_SEARCH})
 
 BRANCH_NAME_IS_DIGIT=$(echo "${BRANCH_NAME}" | grep -cE '^[0-9]+$')
