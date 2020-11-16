@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
 
-# Если это мердж коммит, то ничего подставлять не надо
-if [[ $(cat "$1" | grep -c 'Merge') -ge 1 ]]; then
+# Nothing to substitute if it's a merge commit
+if [[ $(grep -cF 'Merge' "${1}") -ge 1 ]]; then
   exit 0
 fi
 
-FORMAT='[#__value__]'
-REGEXP_FOR_SEARCH='\K\d+'
+if [[ -f "${HOME}/.config/prepare.config" ]];
+then
+  . "${HOME}/.config/prepare.config"
+fi
+
+if [[ -z "${GIT_PREPARE_COMMIT_OUT_FORMAT}" ]];
+then
+  GIT_PREPARE_COMMIT_OUT_FORMAT='[#__value__]'
+fi
+
+if [[ -z "${GIT_PREPARE_COMMIT_REGEXP_FOR_SEARCH}" ]];
+then
+  GIT_PREPARE_COMMIT_REGEXP_FOR_SEARCH='\d+'
+fi
+
+if [[ -z "${GIT_PREPARE_COMMIT_REGEXP_BRANCH_TEMPLATE}" ]];
+then
+  GIT_PREPARE_COMMIT_REGEXP_BRANCH_TEMPLATE='issue-\d+'
+fi
 
 BRANCH_NAME=$(git symbolic-ref --short HEAD)
-BRANCH_NAME=${BRANCH_NAME##*/}
-BRANCH_NAME=${BRANCH_NAME%%-*}
-BRANCH_NAME=$(echo "${BRANCH_NAME}" | grep -oP ${REGEXP_FOR_SEARCH})
+BRANCH_NAME=$(echo "${BRANCH_NAME}" | grep -owE "${GIT_PREPARE_COMMIT_REGEXP_BRANCH_TEMPLATE}")
+BRANCH_NAME=$(echo "${BRANCH_NAME}" | grep -owE "${GIT_PREPARE_COMMIT_REGEXP_FOR_SEARCH}")
 
-BRANCH_NAME_IS_DIGIT=$(echo "${BRANCH_NAME}" | grep -cE '^[0-9]+$')
-
-if [[ ${BRANCH_NAME_IS_DIGIT} -eq 0 ]]; then
-  exit 0
-fi
-
-TASK_NAME=$(echo "${FORMAT}" | sed "s/__value__/${BRANCH_NAME}/g")
-BRANCH_IN_COMMIT=$(fgrep -c "${TASK_NAME}" $1)
+TASK_NAME="${GIT_PREPARE_COMMIT_OUT_FORMAT//__value__/${BRANCH_NAME}}"
+BRANCH_IN_COMMIT=$(grep -cF "${TASK_NAME}" "${1}")
 
 if [ -n "${TASK_NAME}" ] && ! [[ ${BRANCH_IN_COMMIT} -ge 1 ]]; then
-  echo "${TASK_NAME} $(cat $1)" > $1
+  echo "${TASK_NAME} $(cat "${1}")" > "${1}"
 fi
